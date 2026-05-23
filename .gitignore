@@ -216,5 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+#SuperPowers
+superpowers
+
 opencode.json
 .python-version
+
+catalog.json
