@@ -18,10 +18,11 @@ class ProductPayload(BaseModel):
     category_path: str | None = None
     product_type: str | None = None
     description_clean: str
-    ingredients_clean: str | None = None
+    ingredients: str | None = None
     collection_id: str | None = None
     raw_collections: list[str] = Field(default_factory=list)
     is_niche: bool = False
+    is_tester: bool = False
     has_in_stock_variant: bool
     available: bool
     min_price_eur: float | None = None

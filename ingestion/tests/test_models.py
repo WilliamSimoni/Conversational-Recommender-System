@@ -15,7 +15,7 @@ def test_product_payload():
         category_path="Health > Skin Care",
         product_type="Cream",
         description_clean="Clean description.",
-        ingredients_clean="Water, Glycerin",
+        ingredients="Water, Glycerin",
         collection_id="col1",
         raw_collections=["c1", "c2"],
         is_niche=True,

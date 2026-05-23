@@ -43,7 +43,7 @@ def test_parse_raw_product():
     )
     assert payload.product_type == "Eau de Parfum"
     assert payload.description_clean == "Proteggi la tua pelle con il kit solari 2025."
-    assert payload.ingredients_clean == "Alcohol, Aqua"
+    assert payload.ingredients == "Alcohol, Aqua"
     assert payload.collection_id == "gid://shopify/Collection/506804207780"
     assert payload.is_niche is True
     assert payload.available is False

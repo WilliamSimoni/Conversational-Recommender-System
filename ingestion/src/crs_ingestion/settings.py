@@ -19,18 +19,20 @@ class EmbeddingModelConfig(BaseModel):
     base_url: str = "https://api.openai.com/v1"
     api_key: str | None = None
     model_name: str = "text-embedding-3-small"
+    embedding_batch_size: int = 100
 
 
 class QdrantConfig(BaseModel):
     url: str = "http://localhost:6333"
     api_key: str | None = None
-    collection_name: str = "chatwilly_brain"
+    collection_name: str = "crs_data"
     vector_size: int = 1536
 
 
 class Settings(BaseSettings):
     catalog_path: str = "data/catalog.json"
     staging_folder: str = "./staging"
+
     debug: bool = False
     embedding_model: EmbeddingModelConfig = EmbeddingModelConfig()
     qdrant: QdrantConfig = QdrantConfig()

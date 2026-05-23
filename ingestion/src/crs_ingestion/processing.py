@@ -52,12 +52,15 @@ def parse_raw_product(raw: dict[str, Any]) -> ProductPayload:
     raw_collections_raw = raw.get("collections") or []
     raw_collections = [clean_text(c) for c in raw_collections_raw if c]
 
-    # 6. Detect is_niche: exact match against whitelist in config
+    # 6. Detect tester: title starts with "T."
+    is_tester = bool(title and title.strip().startswith("T."))
+
+    # 7. Detect is_niche: exact match against whitelist in config
     config = load_categories()
     niche_collections = set(config.get("niche", {}).get("positive_collections", []))
     is_niche = any(c in niche_collections for c in raw_collections)
 
-    # 7. Map variants
+    # 8. Map variants
     variants_list = []
     raw_variants = raw.get("variants") or []
     for var in raw_variants:
@@ -82,7 +85,7 @@ def parse_raw_product(raw: dict[str, Any]) -> ProductPayload:
             )
         )
 
-    # 8. Available states & prices
+    # 9. Available states & prices
     available = bool(raw.get("available", False))
     has_in_stock_variant = any(v.available for v in variants_list)
 
@@ -100,10 +103,11 @@ def parse_raw_product(raw: dict[str, Any]) -> ProductPayload:
         category_path=category_path,
         product_type=product_type,
         description_clean=description_clean,
-        ingredients_clean=ingredients_clean,
+        ingredients=ingredients_clean,
         collection_id=collection_id,
         raw_collections=raw_collections,
         is_niche=is_niche,
+        is_tester=is_tester,
         has_in_stock_variant=has_in_stock_variant,
         available=available,
         min_price_eur=min_price_eur,
@@ -122,8 +126,12 @@ def build_enriched_text(payload: ProductPayload) -> str:
         parts.append(f"Type: {payload.product_type}")
     if payload.description_clean:
         parts.append(f"Description: {payload.description_clean}")
-    if payload.ingredients_clean:
-        parts.append(f"Ingredients: {payload.ingredients_clean}")
+    if payload.is_tester:
+        parts.append(
+            "Note: This is a tester unit — not in original packaging, usually cheaper."
+        )
+    if payload.ingredients:
+        parts.append(f"Ingredients: {payload.ingredients}")
     if payload.raw_collections:
         parts.append(f"Collections: {', '.join(payload.raw_collections)}")
     if payload.variants:
