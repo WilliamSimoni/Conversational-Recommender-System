@@ -1,0 +1,19 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Since the build context will be the frontend folder,
+# we can copy package files directly
+COPY package.json package-lock.json* ./
+
+# Install all dependencies (including devDependencies needed for running the dev server)
+RUN npm install
+
+# Copy the rest of your local frontend code
+COPY . .
+
+# Expose the port (Vite default is 5173)
+EXPOSE 5173
+
+# Run the development server
+CMD ["npm", "run", "dev", "--", "--host"]
