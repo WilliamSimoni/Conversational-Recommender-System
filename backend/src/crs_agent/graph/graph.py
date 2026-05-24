@@ -15,6 +15,7 @@ from crs_agent.prompts.orchestrator_prompt import (
     ORCHESTRATOR_SYSTEM_PROMPT,
     RECOMMEND_SYSTEM_PROMPT,
 )
+from crs_agent.utils.brand_utils import get_brand_guidelines
 from langchain_core.messages import (
     AnyMessage,
     HumanMessage,
@@ -153,7 +154,10 @@ async def recommend_node(state: GraphState, config: RunnableConfig):
         )
         enriched_items.append(item_dict)
 
-    messages = [SystemMessage(content=RECOMMEND_SYSTEM_PROMPT)]
+    brand_guidelines = get_brand_guidelines()
+    system_content = f"{RECOMMEND_SYSTEM_PROMPT}\n\n{brand_guidelines}"
+    messages = [SystemMessage(content=system_content)]
+    messages.extend(state["messages"])
     items_text = json.dumps(enriched_items, ensure_ascii=False)
     messages.append(
         HumanMessage(
@@ -180,7 +184,11 @@ async def ask_node(state: GraphState, config: RunnableConfig):
             else decision.get("question_topic", "their preferences")
         )
 
-    messages = [SystemMessage(content=ASK_SYSTEM_PROMPT)]
+    brand_guidelines = get_brand_guidelines()
+    system_content = f"{ASK_SYSTEM_PROMPT}\n\n{brand_guidelines}"
+
+    messages = [SystemMessage(content=system_content)]
+    messages.extend(state["messages"])
     messages.append(
         HumanMessage(content=f"The user needs clarification regarding: {topic}")
     )
