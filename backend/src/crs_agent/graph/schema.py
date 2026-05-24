@@ -25,6 +25,9 @@ class RecommendedItem(BaseModel):
 
 class AskClarification(BaseModel):
     action: Literal["ask"] = "ask"
+    rationale: str = Field(
+        description="Explain why you chose to ask for clarification and how it follows the rules."
+    )
     question_topic: str = Field(
         description="The topic or aspect you need clarification on."
     )
@@ -32,6 +35,9 @@ class AskClarification(BaseModel):
 
 class Recommend(BaseModel):
     action: Literal["recommend"] = "recommend"
+    rationale: str = Field(
+        description="Explain your logic for this recommendation. If providing alternatives due to budget/brand mismatch, explicitly state it here."
+    )
     items: List[RecommendedItem] = Field(description="List of products to recommend.")
 
 

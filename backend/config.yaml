@@ -21,7 +21,7 @@ main_loop_max_iterations: 5
 orchestrator_agent_max_iterations: 5
 
 orchestrator_model:
-  model: gemini_flash_lite
+  model: gemini_flash
   fallback: mistral_small
   temperature: 0.7
   max_tokens: 2048
@@ -29,16 +29,16 @@ orchestrator_model:
   reasoning_effort: null
 
 ask_model:
-  model: mistral_small
-  fallback: gemini_flash_lite
+  model: gemini_flash_lite
+  fallback: mistral_small
   temperature: 0.7
   max_tokens: 2048
   top_p: 0.95
   reasoning_effort: null
 
 recommend_model:
-  model: mistral_small
-  fallback: gemini_flash_lite
+  model: gemini_flash_lite
+  fallback: mistral_small
   temperature: 0.7
   max_tokens: 2048
   top_p: 0.95

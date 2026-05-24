@@ -161,7 +161,7 @@ async def recommend_node(state: GraphState, config: RunnableConfig):
     items_text = json.dumps(enriched_items, ensure_ascii=False)
     messages.append(
         HumanMessage(
-            content=f"Please present these recommended products to the user:\n{items_text}"
+            content=f"Orchestrator's rationale for this recommendation: {getattr(decision, 'rationale', 'N/A')}\n\nPlease present these recommended products to the user:\n{items_text}"
         )
     )
 
@@ -190,7 +190,9 @@ async def ask_node(state: GraphState, config: RunnableConfig):
     messages = [SystemMessage(content=system_content)]
     messages.extend(state["messages"])
     messages.append(
-        HumanMessage(content=f"The user needs clarification regarding: {topic}")
+        HumanMessage(
+            content=f"Orchestrator's rationale for asking: {getattr(decision, 'rationale', 'N/A')}\n\nThe user needs clarification regarding: {topic}"
+        )
     )
 
     reply = await ask_model.ainvoke(messages, config)
