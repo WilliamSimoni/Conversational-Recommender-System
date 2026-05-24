@@ -20,5 +20,35 @@
     "expected": "agent asks something else or recommends",
     "note": "fixed with prompt engineering on the orchestrator system prompt and adding the last action in the system prompt of the orchestrator",
     "status": "fixed"
+  },
+  {
+    "id": 3,
+    "conversation": [
+      {"role": "user", "content": "cerco un profumo caldo per l'inverno, qualcosa di speziato o con oud"}
+    ],
+    "error": "",
+    "expected": "agent recommends warm/spiced/oud fragrances without asking unnecessary questions",
+    "note": "happy path — intent is clear, should go straight to recommend",
+    "status": "fixed"
+  },
+  {
+    "id": 4,
+    "conversation": [
+      {"role": "user", "content": "avete dei tester di profumi da donna a meno di 50 euro?"}
+    ],
+    "error": null,
+    "expected": "agent filters is_tester=true, category=fragrance, gender=female, price<=50 and recommends",
+    "note": "tests filter stacking — all four constraints must be respected simultaneously",
+    "status": "open"
+  },
+  {
+    "id": 5,
+    "conversation": [
+      {"role": "user", "content": "Si è rotto tutto"}
+    ],
+    "error": null,
+    "expected": "agent escaltes to human",
+    "note": "Fixed giving more precedence to escalation rather than ask/recommend",
+    "status": "fixed"
   }
 ]
