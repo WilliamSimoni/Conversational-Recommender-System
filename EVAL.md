@@ -75,6 +75,7 @@ Here are 10 example queries across different scenarios to include in the Golden/
 | **Conflicting Constraints** | "Voglio un profumo di lusso, massimo 20 euro." | **Ask/Escalate**: No luxury fragrance exists at that price point. System must handle the contradiction gracefully without recommending something cheap as "luxury". |
 | **Memory / Follow-up** | (Turn 1: "Ho comprato il Dior Sauvage l'anno scorso.") -> Turn 2: "Voglio qualcosa di simile ma diverso." | **Recommend**: Should use Turn 1 as implicit context. Must not recommend Dior Sauvage itself. |
 | **Tester Query** | "Avete dei tester di profumi da donna a meno di 30 euro?" | **Recommend**: Must retrieve only tester variants, strictly under €30. Should not recommend full-size products. |
+| **Language Consistency** | I'm looking for a fresh perfume for summer, around 40 euros." | **Recommend**: Must respond entirely in English. Should retrieve fresh/aquatic fragrances ≤ €40. Must NOT switch to Italian regardless of system prompt language or product catalog locale. |
 
 # What Good Looks Like
 

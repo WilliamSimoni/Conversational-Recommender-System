@@ -1,9 +1,11 @@
 import uvicorn
 from crs_agent.api.lifespan import lifespan
+from crs_agent.api.metrics import get_metrics_data
 from crs_agent.api.routes.chat import chat_router
 from crs_agent.settings import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 
 app = FastAPI(
     title=settings.app_name,
@@ -25,6 +27,14 @@ app.include_router(chat_router, prefix="/api/v1")
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/metrics")
+async def metrics():
+    return Response(
+        content=get_metrics_data(),
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )
 
 
 if __name__ == "__main__":

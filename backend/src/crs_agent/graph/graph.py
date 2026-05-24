@@ -3,6 +3,7 @@ import logging
 import operator
 from typing import Annotated, Any, Dict, List, TypedDict
 
+from crs_agent.api.metrics import time_node
 from crs_agent.graph.agents import ask_model, orchestrator_agent, recommend_model
 from crs_agent.graph.schema import (
     AskClarification,
@@ -40,6 +41,7 @@ class GraphState(TypedDict):
     needs_human: bool
 
 
+@time_node("prepare_state")
 async def prepare_state(state: GraphState, config: RunnableConfig):
     turn_count = state.get("turn_count", 0) + 1
 
@@ -48,6 +50,7 @@ async def prepare_state(state: GraphState, config: RunnableConfig):
     }
 
 
+@time_node("orchestrator")
 async def orchestrator(state: GraphState, config: RunnableConfig):
     logger.info(f"Orchestrator state: {state}")
 
@@ -120,6 +123,7 @@ async def orchestrator(state: GraphState, config: RunnableConfig):
     return {"orchestrator_decision": decision, "last_action": action_type}
 
 
+@time_node("recommend_node")
 async def recommend_node(state: GraphState, config: RunnableConfig):
     decision: Recommend = state.get("orchestrator_decision")
     if not decision or not hasattr(decision, "items"):
@@ -170,6 +174,7 @@ async def recommend_node(state: GraphState, config: RunnableConfig):
     return {"messages": [reply], "last_recommendations": [enriched_items]}
 
 
+@time_node("ask_node")
 async def ask_node(state: GraphState, config: RunnableConfig):
     decision = state.get("orchestrator_decision")
     logger.info(f"ask_node decision: {decision}")
@@ -200,6 +205,7 @@ async def ask_node(state: GraphState, config: RunnableConfig):
     return {"messages": [reply]}
 
 
+@time_node("escalate_node")
 async def escalate_node(state: GraphState, config: RunnableConfig):
     decision: Escalate = state.get("orchestrator_decision")
     if not decision:

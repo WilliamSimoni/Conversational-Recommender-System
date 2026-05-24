@@ -1,9 +1,15 @@
 import logging
+import time
 import uuid
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
+from crs_agent.api.metrics import (
+    CHAT_ERRORS_TOTAL,
+    CHAT_LATENCY,
+    CHAT_REQUESTS_TOTAL,
+)
 from crs_agent.api.routes.chat.models import (
     ChatRequest,
     ConversationStartEvent,
@@ -38,6 +44,7 @@ async def chat_stream(body: ChatRequest, request: Request):
     new_message = body.message.model_dump()
 
     async def event_generator():
+        start_time = time.perf_counter()
         start_event = ConversationStartEvent(conversation_id=conversation_id)
         yield f"data: {start_event.model_dump_json()}\n\n"
 
@@ -92,9 +99,13 @@ async def chat_stream(body: ChatRequest, request: Request):
 
         except Exception as e:
             logger.error(str(e), exc_info=True)
+            CHAT_ERRORS_TOTAL.inc()
             yield f"data: {MessageChunkEvent(content='Mi dispiace, si è verificato un errore. Riprova tra un momento.').model_dump_json()}\n\n"
 
         finally:
+            elapsed = (time.perf_counter() - start_time) * 1000
+            CHAT_LATENCY.observe(elapsed)
+            CHAT_REQUESTS_TOTAL.inc()
             yield f"data: {DoneEvent().model_dump_json()}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

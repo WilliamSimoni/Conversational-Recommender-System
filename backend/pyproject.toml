@@ -26,6 +26,7 @@ dependencies =[
     "tenacity==9.1.4",
     "langgraph-checkpoint-postgres==3.1.0",
     "psycopg[binary,pool]==3.3.4",
+    "prometheus-client==0.25.0",
 ]
 
 [project.optional-dependencies]

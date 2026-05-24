@@ -83,6 +83,21 @@ For this reason, the more interesting direction is a small language model fine-t
 6. **No Variant Suggestions**: Currently, the system only suggests the main product level without surfacing specific variations (e.g., specific sizes, concentrations, or tester variations) directly in the recommendation text. If a product has a 50ml and 100ml variant, the system retrieves the parent product but fails to explicitly guide the user to the specific variant that matches their request.
 7. **Brand Search Weakness**: Without a dedicated `brand` field extracted during ETL to use as a hard filter, exact brand searches rely entirely on semantic similarity. This often fails—if a user asks for a specific brand's floral perfume, the system might retrieve a semantically similar floral perfume from a competitor instead of respecting the implicit hard constraint of the brand name.
 
+### Telemetry and Alerting
+
+To ensure the system remains healthy and cost-effective in production, Prometheus metrics have been implemented. The following base set of metrics are exposed:
+- `chat_request_duration_ms`: End-to-end latency for a full chat request.
+- `graph_node_duration_ms`: Per-node latency (e.g., measuring how long the `central_agent` takes vs. the `Ask` node).
+- `chat_requests_total`: Throughput of incoming requests.
+- `chat_errors_total`: The rate of errors within the system.
+
+These metrics enable real-time observability. More importantly, they can be hooked into **Prometheus Alertmanager** to trigger automated alerts. For example, you could configure alerts if:
+- End-to-end latency spikes above 10 seconds (indicating model provider degradation or a stuck routing loop).
+- The `chat_errors_total` rate exceeds a certain threshold.
+- The `central_agent` node latency remains persistently high, hinting at issues with context size or complex tool calls taking too long.
+
+This ensures that any operational failures or degradation in response times are flagged to on-call developers immediately, avoiding silent failures in the user experience.
+
 ### Cost per Conversation
 
 Rough numbers, using current public prices for our dual-model setup:
