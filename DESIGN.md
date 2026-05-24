@@ -78,17 +78,20 @@ For this reason, the more interesting direction is a small language model fine-t
 4. **Fallback strategy / Infinite loops**: There isn't a real fallback strategy. In some papers they close the conversation after 10 hops. However, in this implementation the agent continues the conversaion indifenetly until you don't click new request.
 5. **Out-of-domain / Chit-chat handling**: If the user asks general questions about a product the only actions encoded by the agent are `Ask` (clarifying constraints) or `Recommend`. Thus, it struggles to provide a natural response and might force a recommendation. The simple fix is to add a dedicated "Chit Chat" node (with an appropriate persona/name) and let the orchestrator route non-shopping queries there.
 
-### Cost per Query
+### Cost per Conversation
 
-Rough numbers, current public prices. Single-turn recommend with one search_catalog call:
+Rough numbers, current public prices using `gemini-1.5-flash` or similar tier models ($0.25 / 1M input, $1.50 / 1M output).
+
+We assume a typical successful conversation takes about **3 turns** (e.g., 1 initial query -> Agent Asks for clarification -> User clarifies -> Agent searches and Recommends).
 
 | Component | Tokens (in / out) | Unit price | Cost |
 |---|---|---|---|
 | Query embedding (gemini-embedding-2) | ~50 / — | $0.2 / 1M | ~$0.00001 |
-| `central_agent` LLM call #1 (sees system + transcript, emits tool call) | ~2,500 / 150 | $0.25 / $1.50 per 1M | ~$0.00085 |
-| `central_agent` LLM call #2 (sees tool result, emits `Recommend`) | ~3,200 / 400 | same | ~$0.00140 |
-| **Total per recommend turn** | | | **≈ $0.0023** |
-| Single `Ask` turn (no tool call) | ~2,500 / 150 | | ≈ $0.00085 |
-| ETL one-shot embed of 300 products (cached after) | ~150k / — | $0.20 / 1M | ≈ $0.03 |
+| Turn 1: `Ask` (no tool call) | ~2,500 / 150 | $0.25 / $1.50 per 1M | ~$0.00085 |
+| Turn 2: `Ask` or `Chit Chat` | ~3,000 / 150 | same | ~$0.00097 |
+| Turn 3: `Recommend` (includes 1 tool call + final response) | ~6,000 / 550 | same | ~$0.00232 |
+| **Total per typical conversation (3 turns)** | | | **≈ $0.0041** |
+| ETL one-shot embed of 300 products (cached) | ~150k / — | $0.20 / 1M | ≈ $0.03 |
 
-At 10,000 turns/month: ~$23/mo on LLM calls, dominated by input tokens. If retrieval quality requires stronger reasoning, switching the central_agent to Gemini 3 Flash Preview doubles the cost to ~$46/mo — still very cheap at this scale.
+**At 10,000 complete conversations/month (approx. 30,000 turns):** ~$41/mo on LLM calls.
+If retrieval quality requires stronger reasoning, switching the `central_agent` to a heavier model (like Gemini 1.5 Pro or GPT-4o) would increase the cost by ~10x.
