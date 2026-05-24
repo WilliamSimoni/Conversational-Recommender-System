@@ -68,6 +68,23 @@ export function useChat() {
             break
           }
 
+          case 'escalation':
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? {
+                      ...m,
+                      content: m.content + event.message,
+                      escalation: {
+                        support_phone: event.support_phone,
+                        support_email: event.support_email,
+                      },
+                    }
+                  : m,
+              ),
+            )
+            break
+
           case 'done':
             setMessages((prev) =>
               prev.map((m) =>

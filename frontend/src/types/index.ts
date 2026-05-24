@@ -19,6 +19,13 @@ export interface RecommendedItemEvent {
   link: string
 }
 
+export interface EscalationEvent {
+  type: 'escalation'
+  message: string
+  support_phone: string
+  support_email: string
+}
+
 export interface DoneEvent {
   type: 'done'
 }
@@ -27,6 +34,7 @@ export type SSEEvent =
   | ConversationStartEvent
   | MessageChunkEvent
   | RecommendedItemEvent
+  | EscalationEvent
   | DoneEvent
 
 export interface ProductCard {
@@ -44,5 +52,9 @@ export interface Message {
   role: 'user' | 'assistant'
   content: string
   products?: ProductCard[]
+  escalation?: {
+    support_phone: string
+    support_email: string
+  }
   isStreaming?: boolean
 }

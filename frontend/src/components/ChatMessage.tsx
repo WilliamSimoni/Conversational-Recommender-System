@@ -1,6 +1,7 @@
 import type { Message } from '../types'
 import ReactMarkdown from 'react-markdown'
 import { ProductCard } from './ProductCard'
+import { EscalationCard } from './EscalationCard'
 import styles from './ChatMessage.module.css'
 
 interface Props {
@@ -65,6 +66,13 @@ export function ChatMessage({ message }: Props) {
               <ProductCard key={product.product_id} product={product} index={i} />
             ))}
           </div>
+        )}
+
+        {message.escalation && (
+          <EscalationCard
+            phone={message.escalation.support_phone}
+            email={message.escalation.support_email}
+          />
         )}
       </div>
     </div>

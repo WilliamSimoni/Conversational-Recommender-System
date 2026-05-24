@@ -8,6 +8,7 @@ from crs_agent.api.routes.chat.models import (
     ChatRequest,
     ConversationStartEvent,
     DoneEvent,
+    EscalationEvent,
     MessageChunkEvent,
     RecommendedItem,
 )
@@ -86,8 +87,8 @@ async def chat_stream(body: ChatRequest, request: Request):
                         if hasattr(last_msg, "content")
                         else str(last_msg)
                     )
-                    escalate_message = MessageChunkEvent(content=content)
-                    yield f"data: {escalate_message.model_dump_json()}\n\n"
+                    escalate_event = EscalationEvent(message=content)
+                    yield f"data: {escalate_event.model_dump_json()}\n\n"
 
         except Exception as e:
             logger.error(str(e), exc_info=True)

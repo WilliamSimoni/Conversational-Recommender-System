@@ -49,9 +49,17 @@ class DoneEvent(BaseModel):
     type: Literal["done"] = "done"
 
 
+class EscalationEvent(BaseModel):
+    type: Literal["escalation"] = "escalation"
+    message: str
+    support_phone: str = "+39 02 1234567"
+    support_email: str = "supporto@lume-beauty.it"
+
+
 StreamEvent = Union[
     ConversationStartEvent,
     MessageChunkEvent,
     RecommendedItem,
+    EscalationEvent,
     DoneEvent,
 ]
