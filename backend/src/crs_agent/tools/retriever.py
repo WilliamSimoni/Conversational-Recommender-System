@@ -65,12 +65,16 @@ async def retrieve_products(query: SearchCatalogInput) -> SearchCatalogOutput | 
     """
     Search the product catalog and return matching ProductCards.
 
-    Call this whenever the customer is looking for a product — including vague or
-    implicit requests. Re-call with refined filters when:
+    You can use this tool to explore the catalog or find specific items.
+    However, if the user's initial request is very broad (e.g., "I need a gift" or "I want a perfume")
+    and returns too many generic results, DO NOT recommend them immediately.
+    Instead, use the AskClarification action to narrow down their preferences (budget, notes, occasion).
+
+    Re-call with refined filters when:
     - no results match the budget (relax or surface alternatives)
     - customer wanted niche but results were mass-market (set is_niche=True)
-    - customer asks for alternatives (populate exclude_product_ids from last_recommendations)
-    - customer refines with 'più luxury' / 'più economico' (adjust budget_min/max from last_product_cards prices)
+    - customer asks for alternatives (populate exclude_product_ids from last_recommendations in CONTEXT)
+    - customer refines with 'più luxury' / 'più economico' (adjust budget_min/max based on CONTEXT prices)
 
     Do NOT call for purely informational questions (brand history, ingredients,
     store policies, order status) — those go to Escalate.

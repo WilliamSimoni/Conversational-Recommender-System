@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "conversation": [
+      {"role": "user", "content": "Ciao, voglio fare un regalo a mia mamma!"}
+    ],
+    "error": "agent recommends immediately instead of asking clarifying questions",
+    "expected": "agent asks about the mother's preferences before recommending",
+    "note": "fixed with prompt engineering on the orchestrator system prompt",
+    "status": "fixed"
+  },
+  {
+    "id": 2,
+    "conversation": [
+      {"role": "user", "content": "Ciao, voglio fare un regalo a mia mamma!"},
+      {"role": "ai", "content": "Certo, cara! Per aiutarti al meglio, dimmi: tua mamma ama i profumi freschi e leggeri o preferisce quelli più avvolgenti e intensi? E, se puoi, dammi un'idea di budget così posso suggerirti le opzioni più adatte."},
+      {"role": "user", "content": "Non lo so. Fai te"}
+    ],
+    "error": "agent loops on the same question",
+    "expected": "agent asks something else or recommends",
+    "note": "fixed with prompt engineering on the orchestrator system prompt and adding the last action in the system prompt of the orchestrator",
+    "status": "fixed"
+  }
+]

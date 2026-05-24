@@ -1,6 +1,6 @@
 from typing import Literal, Optional, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class ChatMessage(BaseModel):
@@ -30,12 +30,19 @@ class MessageChunkEvent(BaseModel):
 class RecommendedItem(BaseModel):
     type: Literal["recommended_item"] = "recommended_item"
     product_id: str
-    title: str
+    title: Optional[str] = None
     price: Optional[float] = None
     in_stock: Optional[bool] = None
     reason: Optional[str] = None
     affinity: Optional[float] = None
     link: Optional[str] = None
+
+    @field_validator("title", mode="before")
+    @classmethod
+    def title_fallback(cls, v, info):
+        if v is None:
+            return info.data.get("product_id", "Unknown")
+        return v
 
 
 class DoneEvent(BaseModel):

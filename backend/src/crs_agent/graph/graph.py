@@ -49,7 +49,39 @@ async def prepare_state(state: GraphState, config: RunnableConfig):
 
 async def orchestrator(state: GraphState, config: RunnableConfig):
     logger.info(f"Orchestrator state: {state}")
-    messages = [SystemMessage(content=ORCHESTRATOR_SYSTEM_PROMPT)] + state["messages"]
+
+    last_action = state.get("last_action", "None")
+    all_recs = state.get("last_recommendations", [])
+
+    recs_text = ""
+    if all_recs:
+        recs_lines = []
+        for i, rec_batch in enumerate(all_recs):
+            recs_lines.append(f"Recommendation Round {i+1}:")
+            for r in rec_batch:
+                title = r.get("title", "Unknown")
+                pid = r.get("product_id", "Unknown")
+                price = r.get("price", "N/A")
+                recs_lines.append(f"  - {title} (ID: {pid}, Price: €{price})")
+        recs_text = "\n".join(recs_lines)
+        recs_text += "\n\n(Use these IDs for 'exclude_product_ids' to avoid repeating them if the user asks for alternatives)"
+    else:
+        recs_text = "None"
+
+    context_text = (
+        "--- SESSION CONTEXT ---\n"
+        "Last Action Taken: {last_action}\n"
+        "\n"
+        "Products recommended so far in this session:\n"
+        "{recs_text}\n"
+        "-----------------------"
+    ).format(last_action=last_action, recs_text=recs_text)
+
+    messages = [
+        SystemMessage(content=ORCHESTRATOR_SYSTEM_PROMPT),
+        SystemMessage(content=context_text),
+    ] + state["messages"]
+
     response = await orchestrator_agent.ainvoke({"messages": messages}, config)
     logger.info(f"Orchestrator agent response: {response}")
 
