@@ -91,12 +91,12 @@ For each metric, we need to define what "good" looks like to ensure our system i
 # Cost and Trust
 
 ## Cost to Run Evals
-Using the same unit prices outlined in `DESIGN.md` ($0.25 / 1M input tokens, $1.50 / 1M output tokens), running an evaluation suite over a dataset of 200 conversations (simulated user + LLM judge) can be estimated as follows. We assume a typical conversation takes 3 turns:
+Using the dual-model setup outlined in `DESIGN.md` (`gemini-3-flash-preview` for the Orchestrator and `gemini-flash-lite-latest` for the Nodes), running an evaluation suite over a dataset of 200 conversations (simulated user + LLM judge) can be estimated as follows. We assume a typical conversation takes 3 turns:
 
 - **Simulated User**: ~2,500 input / 150 output tokens per turn, avg 3 turns = ~8k total tokens per conversation. For 200 conversations = 1.6M total tokens. ~$0.54.
-- **Agent Generation**: Based on the updated 3-turn estimate in `DESIGN.md` (Turn 1: Ask, Turn 2: Ask/Chit Chat, Turn 3: Recommend) costing ~$0.0041 per conversation. For 200 conversations = ~$0.82.
+- **Agent Generation**: Based on the updated 3-turn estimate in `DESIGN.md` (Turn 1: Ask, Turn 2: Ask/Chit Chat, Turn 3: Recommend) costing ~$0.0063 per conversation. For 200 conversations = ~$1.26.
 - **LLM Judge**: ~3,000 input / 500 output tokens to evaluate Faithfulness, Brand Accuracy, and Success per conversation. Because evaluating requires deep reasoning and nuance, we use a SOTA model like **Gemini 3.1 Pro Preview** ($2.00 / 1M in, $12.00 / 1M out). For 200 conversations = 600k input / 100k output tokens. ~$2.40.
-- **Total Cost**: Roughly $3.76 per full evaluation run.
+- **Total Cost**: Roughly $4.20 per full evaluation run.
 
 ## Trust in the Eval
 To calibrate the LLM judge, we randomly sample some conversations and let humans blindly grade them. We then compare the human grades with the LLM judge grades and we want an agreement rate of > 85%. If the agreement is too low, we need to improve the judge prompt. One way to fine-tune it given the human labeled dataset is with DSPy (a framework for prompt optimization) and GEPA (a reinforcement learning technique), which can automatically tune the judge prompt given the human-labeled dataset as a ground truth.

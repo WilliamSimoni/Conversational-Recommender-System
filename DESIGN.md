@@ -52,7 +52,10 @@ Why this structure:
 - The central agent owns retrieval and decision-making: it can call search_catalog multiple times, reason over the returned products, re-rank them, and decide which action to take (that's why for this version I didn't add other reranking modules)
 - The three terminal nodes handle voice and judgment separately from retrieval logic, keeping each component focused.
 
-Each call to the LLM uses Gemini models with fallback towards Mistral models (or vice versa). This allows the system to be resilient when the main provider is down or not available for global rate limit issues.
+Each call to the LLM uses Gemini models with fallback towards Mistral models (or vice versa). This allows the system to be resilient when the main provider is down or not available for global rate limit issues. To optimize both intelligence and cost, the architecture uses a dual-model setup:
+- **Orchestrator (`central_agent`)**: Uses `gemini-3-flash-preview` ($0.50 / 1M in, $3.00 / 1M out). This model handles the heavy lifting: reasoning over catalog results, managing state, and making precise tool-calling and routing decisions.
+- **Terminal Nodes (`Ask`, `Recommend`, `Escalate`)**: Use `gemini-flash-lite-latest` ($0.25 / 1M in, $1.50 / 1M out). Once the orchestrator decides what to do, these highly efficient models are used solely to generate the final textual response in the correct brand persona.
+
 If the orchestrator fails to produce a valid structured output, the fallback extracts the last text message from the tool loop and routes it directly to escalate_node.
 
 ### Retrieval
@@ -80,18 +83,20 @@ For this reason, the more interesting direction is a small language model fine-t
 
 ### Cost per Conversation
 
-Rough numbers, current public prices using `gemini-1.5-flash` or similar tier models ($0.25 / 1M input, $1.50 / 1M output).
+Rough numbers, using current public prices for our dual-model setup:
+- **Orchestrator (`gemini-3-flash-preview`)**: $0.50 / 1M input, $3.00 / 1M output
+- **Terminal Nodes (`gemini-flash-lite-latest`)**: $0.25 / 1M input, $1.50 / 1M output
 
-We assume a typical successful conversation takes about **3 turns** (e.g., 1 initial query -> Agent Asks for clarification -> User clarifies -> Agent searches and Recommends).
+We assume a typical successful conversation takes about **3 turns** (e.g., 1 initial query -> Agent Asks for clarification -> User clarifies -> Agent searches and Recommends). The token costs below assume a roughly 50/50 blend of Orchestrator and Terminal Node tokens per turn.
 
 | Component | Tokens (in / out) | Unit price | Cost |
 |---|---|---|---|
 | Query embedding (gemini-embedding-2) | ~50 / — | $0.2 / 1M | ~$0.00001 |
-| Turn 1: `Ask` (no tool call) | ~2,500 / 150 | $0.25 / $1.50 per 1M | ~$0.00085 |
-| Turn 2: `Ask` or `Chit Chat` | ~3,000 / 150 | same | ~$0.00097 |
-| Turn 3: `Recommend` (includes 1 tool call + final response) | ~6,000 / 550 | same | ~$0.00232 |
-| **Total per typical conversation (3 turns)** | | | **≈ $0.0041** |
+| Turn 1: `Ask` (no tool call) | ~2,500 / 150 | Blended | ~$0.00130 |
+| Turn 2: `Ask` or `Chit Chat` | ~3,000 / 150 | Blended | ~$0.00150 |
+| Turn 3: `Recommend` (includes 1 tool call + final response) | ~6,000 / 550 | Blended | ~$0.00350 |
+| **Total per typical conversation (3 turns)** | | | **≈ $0.0063** |
 | ETL one-shot embed of 300 products (cached) | ~150k / — | $0.20 / 1M | ≈ $0.03 |
 
-**At 10,000 complete conversations/month (approx. 30,000 turns):** ~$41/mo on LLM calls.
+**At 10,000 complete conversations/month (approx. 30,000 turns):** ~$63/mo on LLM calls.
 If retrieval quality requires stronger reasoning, switching the `central_agent` to a heavier model (like Gemini 1.5 Pro or GPT-4o) would increase the cost by ~10x.
