@@ -56,7 +56,7 @@ We'll need these datasets for the end-to-end system and for the single nodes.
 
 # Test cases for End-to-End
 
-Here are 10 example queries across different scenarios to include in the Golden/Adversarial dataset:
+Here are 16 example queries across different scenarios to include in the Golden/Adversarial dataset:
 
 | Category | User Input | Expected Action / Golden Signal |
 | :--- | :--- | :--- |
@@ -81,11 +81,11 @@ Here are 10 example queries across different scenarios to include in the Golden/
 
 For each metric, we need to define what "good" looks like to ensure our system is ready for production and continuously improving.
 
-| Metric | Threshold / Target | Calibration & Failure Mode Analysis |
+| Metric | Threshold / Target | Note |
 |---|---|---|
-| **Success Rate** | > 85% | We consider a conversation successful if the target item is recommended within 3 turns. Failure modes: If it drops below 85%, we sample failed conversations to see if the issue is in intent extraction, retrieval, or ranking. |
-| **Faithfulness** | > 95% | The agent must not hallucinate prices, ingredients, or stock. A single hallucination in a response fails the turn. Failure modes: Prompt tuning the explainer agent or injecting context more strictly. We use LLM judges calibrated against human review on a subset of queries. |
-| **Brand Accuracy** | > 4/5 avg score | The tone must be knowledgeable, elegant, and warm (like a *profumiere*). We calibrate the LLM judge by having the brand team score outputs and tuning the judge's prompt until its correlation with humans is > 0.8. |
+| **Success Rate** | > 85% | If it drops below 85%, we sample failed conversations to see if the issue is in intent extraction, retrieval, or ranking. |
+| **Faithfulness** | > 95% | The agent must not hallucinate prices, ingredients, or stock |
+| **Brand Accuracy** | > 4/5 avg score | The tone must be knowledgeable, elegant, and warm (like a *profumiere*) |
 | **Consistency** | > 0.85 cosine sim | If the user asks the same question, the semantic meaning of the recommendations should be highly similar. If it drops, we might need to lower the temperature or fix stochasticity in the retrieval layer. |
 | **Budget/Stock Compliance** | 100% | This is a hard deterministic check. Recommending an out-of-stock item or an item over the strict budget constraint is an automatic failure. Failure mode: check metadata filtering in the RAG layer. |
 
