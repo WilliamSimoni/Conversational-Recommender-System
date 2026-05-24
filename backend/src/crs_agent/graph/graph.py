@@ -12,7 +12,6 @@ from crs_agent.graph.schema import (
 )
 from crs_agent.prompts.orchestrator_prompt import (
     ASK_SYSTEM_PROMPT,
-    ESCALATE_SYSTEM_PROMPT,
     ORCHESTRATOR_SYSTEM_PROMPT,
     RECOMMEND_SYSTEM_PROMPT,
 )
@@ -37,6 +36,7 @@ class GraphState(TypedDict):
     last_recommendations: Annotated[List[List[Dict[str, Any]]], operator.add]
     last_action: str
     orchestrator_decision: Any
+    needs_human: bool
 
 
 async def prepare_state(state: GraphState, config: RunnableConfig):
@@ -48,15 +48,24 @@ async def prepare_state(state: GraphState, config: RunnableConfig):
 
 
 async def orchestrator(state: GraphState, config: RunnableConfig):
+    logger.info(f"Orchestrator state: {state}")
     messages = [SystemMessage(content=ORCHESTRATOR_SYSTEM_PROMPT)] + state["messages"]
     response = await orchestrator_agent.ainvoke({"messages": messages}, config)
+    logger.info(f"Orchestrator agent response: {response}")
 
     decision = response.get("structured_response")
     if isinstance(decision, CentralAgentOutput):
         decision = decision.root
     else:
-        pass
-        # fallback strategy (probably escalate)
+        logger.warning(
+            f"Orchestrator returned no structured response or invalid type: {type(decision)}"
+        )
+        return {
+            "orchestrator_decision": Escalate(
+                reason="Non sono riuscito a trovare una risposta adatta."
+            ),
+            "last_action": "escalate",
+        }
 
     action_type = "unknown"
     if isinstance(decision, Recommend) or (
@@ -74,11 +83,17 @@ async def orchestrator(state: GraphState, config: RunnableConfig):
     ):
         action_type = "escalate"
 
+    logger.info(f"Orchestrator final decision: {decision}, action: {action_type}")
     return {"orchestrator_decision": decision, "last_action": action_type}
 
 
 async def recommend_node(state: GraphState, config: RunnableConfig):
     decision: Recommend = state.get("orchestrator_decision")
+    if not decision or not hasattr(decision, "items"):
+        logger.error(f"recommend_node called with invalid decision: {decision}")
+        return {
+            "messages": [SystemMessage(content="Si è verificato un errore interno.")]
+        }
     from crs_agent.vector_db.retriever import retrieve_by_product_ids
 
     product_ids = [item.product_id for item in decision.items]
@@ -121,11 +136,17 @@ async def recommend_node(state: GraphState, config: RunnableConfig):
 
 async def ask_node(state: GraphState, config: RunnableConfig):
     decision = state.get("orchestrator_decision")
-    topic = (
-        decision.question_topic
-        if hasattr(decision, "question_topic")
-        else decision.get("question_topic", "their preferences")
-    )
+    logger.info(f"ask_node decision: {decision}")
+
+    if not decision:
+        logger.error("ask_node called with None decision")
+        topic = "their preferences"
+    else:
+        topic = (
+            decision.question_topic
+            if hasattr(decision, "question_topic")
+            else decision.get("question_topic", "their preferences")
+        )
 
     messages = [SystemMessage(content=ASK_SYSTEM_PROMPT)]
     messages.append(
@@ -138,19 +159,19 @@ async def ask_node(state: GraphState, config: RunnableConfig):
 
 
 async def escalate_node(state: GraphState, config: RunnableConfig):
-    decision = state.get("orchestrator_decision")
-    reason = (
-        decision.reason
-        if hasattr(decision, "reason")
-        else decision.get("reason", "unknown")
-    )
+    decision: Escalate = state.get("orchestrator_decision")
+    if not decision:
+        logger.error("escalate_node called with None decision")
+        reason = "Mi dispiace, non sono in grado di procedere con la tua richiesta in questo momento."
+    else:
+        reason = (
+            decision.reason
+            if hasattr(decision, "reason")
+            else decision.get("reason", "Unknown reason")
+        )
+    from langchain_core.messages import AIMessage
 
-    messages = [SystemMessage(content=ESCALATE_SYSTEM_PROMPT)]
-    messages.append(HumanMessage(content=f"Reason for escalation: {reason}"))
-
-    reply = await recommend_model.ainvoke(messages, config)
-
-    return {"messages": [reply]}
+    return {"messages": [AIMessage(content=reason)], "needs_human": True}
 
 
 def route_orchestrator(state: GraphState) -> str:
@@ -161,8 +182,8 @@ def route_orchestrator(state: GraphState) -> str:
         return "ask_node"
     elif action == "escalate":
         return "escalate_node"
-    # Fallback
-    return "ask_node"
+    # Fallback to escalate if unknown
+    return "escalate_node"
 
 
 agent_builder = StateGraph(GraphState)

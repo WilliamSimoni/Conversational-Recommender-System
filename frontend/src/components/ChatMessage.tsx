@@ -1,4 +1,5 @@
 import type { Message } from '../types'
+import ReactMarkdown from 'react-markdown'
 import { ProductCard } from './ProductCard'
 import styles from './ChatMessage.module.css'
 
@@ -45,10 +46,10 @@ export function ChatMessage({ message }: Props) {
       <div className={styles.assistantContent}>
         <div className={styles.assistantBubble}>
           {message.content ? (
-            <p className={styles.assistantText}>
-              {message.content}
+            <div className={styles.assistantText}>
+              <ReactMarkdown>{message.content}</ReactMarkdown>
               {message.isStreaming && <StreamingCursor />}
-            </p>
+            </div>
           ) : message.isStreaming ? (
             <div className={styles.typingIndicator}>
               <span />

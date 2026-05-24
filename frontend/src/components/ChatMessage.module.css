@@ -72,6 +72,31 @@
   letter-spacing: 0.01em;
 }
 
+.assistantText p {
+  margin: 0 0 1rem 0;
+}
+
+.assistantText p:last-child {
+  margin-bottom: 0;
+}
+
+.assistantText ul,
+.assistantText ol {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+
+.assistantText li {
+  margin-bottom: 0.25rem;
+}
+
+.assistantText code {
+  background: var(--bg-secondary);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
 .cursor {
   display: inline-block;
   width: 1.5px;

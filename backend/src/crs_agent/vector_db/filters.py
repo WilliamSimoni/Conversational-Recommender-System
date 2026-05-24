@@ -72,7 +72,12 @@ def build_filter(query: VectorSearchInput) -> models.Filter:
         )
 
     if query.exclude_product_ids:
-        must_not.append(models.HasIdCondition(has_id=query.exclude_product_ids))
+        must_not.append(
+            models.FieldCondition(
+                key="product_id",
+                match=models.MatchAny(any=query.exclude_product_ids),
+            )
+        )
 
     return models.Filter(
         must=must if must else None,

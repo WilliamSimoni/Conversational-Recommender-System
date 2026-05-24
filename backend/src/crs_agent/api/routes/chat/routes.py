@@ -1,11 +1,10 @@
-import asyncio
 import logging
 import uuid
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from .models import (
+from crs_agent.api.routes.chat.models import (
     ChatRequest,
     ConversationStartEvent,
     DoneEvent,
@@ -15,38 +14,6 @@ from .models import (
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-MOCK_TEXT = "Ho trovato qualcosa che potrebbe fare al caso tuo. Ecco alcune proposte selezionate per te."
-
-MOCK_PRODUCTS = [
-    RecommendedItem(
-        product_id="P005",
-        title="Tom Ford — Black Orchid",
-        price=165.0,
-        in_stock=True,
-        reason="Note di oud e spezie, perfetto per l'inverno.",
-        affinity=0.97,
-        link="https://lume.it/products/p005",
-    ),
-    RecommendedItem(
-        product_id="P009",
-        title="Xerjoff — Naxos",
-        price=280.0,
-        in_stock=True,
-        reason="Orientale con miele e tabacco, lussuoso e avvolgente.",
-        affinity=0.91,
-        link="https://lume.it/products/p009",
-    ),
-    RecommendedItem(
-        product_id="P001",
-        title="Maison Margiela Replica — Jazz Club",
-        price=145.0,
-        in_stock=True,
-        reason="Legnoso e speziato, ideale per le serate invernali.",
-        affinity=0.85,
-        link="https://lume.it/products/p001",
-    ),
-]
 
 
 @router.post(
@@ -64,24 +31,63 @@ async def chat_stream(body: ChatRequest, request: Request):
         raise HTTPException(status_code=400, detail="Empty message")
 
     conversation_id = body.conversation_id or str(uuid.uuid4())
+    agent = request.app.state.agent
+
+    config = {"configurable": {"thread_id": conversation_id, "recursion_limit": 50}}
+    new_message = body.message.model_dump()
 
     async def event_generator():
-        yield f"data: {ConversationStartEvent(conversation_id=conversation_id).model_dump_json()}\n\n"
+        start_event = ConversationStartEvent(conversation_id=conversation_id)
+        yield f"data: {start_event.model_dump_json()}\n\n"
 
         try:
-            chunk_size = 4
-            for i in range(0, len(MOCK_TEXT), chunk_size):
+            async for event in agent.astream_events(
+                {"messages": [new_message]},
+                config=config,
+                version="v2",
+            ):
                 if await request.is_disconnected():
-                    return
-                chunk = MessageChunkEvent(content=MOCK_TEXT[i : i + chunk_size])
-                yield f"data: {chunk.model_dump_json()}\n\n"
-                await asyncio.sleep(0.03)
+                    break
 
-            for product in MOCK_PRODUCTS:
-                if await request.is_disconnected():
-                    return
-                yield f"data: {product.model_dump_json()}\n\n"
-                await asyncio.sleep(0.05)
+                kind = event["event"]
+                metadata = event["metadata"]
+                checkpoint_ns = metadata.get("checkpoint_ns", "")
+
+                event_model = None
+
+                if kind == "on_chat_model_stream":
+                    if (
+                        "ask_node" in checkpoint_ns
+                        or "escalate_node" in checkpoint_ns
+                        or "recommend_node" in checkpoint_ns
+                    ):
+                        content = event["data"]["chunk"].content
+                        if content:
+                            event_model = MessageChunkEvent(content=content)
+
+                if event_model:
+                    yield f"data: {event_model.model_dump_json()}\n\n"
+
+            final_state = await agent.aget_state(config)
+            last_decision = final_state.values.get("last_action")
+            if last_decision == "recommend":
+                recommendations = final_state.values.get("last_recommendations")
+                if recommendations:
+                    last_recommendations = recommendations[-1]
+                    for recommentation in last_recommendations:
+                        item = RecommendedItem.model_validate(recommentation)
+                        yield f"data: {item.model_dump_json()}\n\n"
+            elif last_decision == "escalate":
+                messages = final_state.values.get("messages")
+                if messages:
+                    last_msg = messages[-1]
+                    content = (
+                        last_msg.content
+                        if hasattr(last_msg, "content")
+                        else str(last_msg)
+                    )
+                    escalate_message = MessageChunkEvent(content=content)
+                    yield f"data: {escalate_message.model_dump_json()}\n\n"
 
         except Exception as e:
             logger.error(str(e), exc_info=True)
