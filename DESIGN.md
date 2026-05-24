@@ -70,10 +70,16 @@ However, in a previous project I ran an analysis on cross-encoder rerankers such
 
 For this reason, the more interesting direction is a small language model fine-tuned specifically for this task. The training data can be bootstrapped using a large LLM as a first-pass reranker: given a query and 100 candidate products, the large model produces an ordered list of 10. That process, repeated across a representative set of queries, generates a labeled dataset cheaply. Before using it for training, MRR and NDCG of the large model's output should be verified to be significantly above the BGE baseline — that's the quality bar the fine-tuned model needs to replicate. A secondary benefit of fine-tuning is structured output reliability: small models struggle with constrained formats out of the box, but respond well to task-specific training, which makes this a natural fit.
 
+### Known Failure Modes
+
+1. **Negative constraints**: When a user says "I do *not* want vanilla", the embedding model still maps the query closely to vanilla products because the word is present. Without structured ingredient parsing to create exclusion filters, the agent relies entirely on multi-turn self-correction (retrieving vanilla products, noticing they violate the constraint, and trying again), which is slower.
+2. **Price contradictions**: A user asking for a "luxury niche perfume under 20 euros" presents a contradiction. The agent will either fail to find anything or recommend a cheap non-niche perfume, rather than effectively challenging the premise of the user's request.
+3. **Long conversations / Context management**: The current agent doesn't handle long conversations. So, eventually it will break for extremely long conversations. A technique I found in several papers regarding recommendation system, is to use a user profile as main context maintainer. Indeed my original idea was to have a node before the orchestrator that updates the user profile. However, time constraints led me to avoid that. In that way the orchestrator would just get the user profile + the latest 4/5 messages keeping the context small and the costs low. The node before the orchestrator could be an agent itself that can call a memory with a global user profile and that can use that to provide suggestions to the orchestrator.
+4. **Fallback strategy / Infinite loops**: There isn't a real fallback strategy. In some papers they close the conversation after 10 hops. However, in this implementation the agent continues the conversaion indifenetly until you don't click new request.
+
 ### Cost per Query
 
 Rough numbers, current public prices. Single-turn recommend with one search_catalog call:
-
 
 | Component | Tokens (in / out) | Unit price | Cost |
 |---|---|---|---|
@@ -84,4 +90,4 @@ Rough numbers, current public prices. Single-turn recommend with one search_cata
 | Single `Ask` turn (no tool call) | ~2,500 / 150 | | ≈ $0.00085 |
 | ETL one-shot embed of 300 products (cached after) | ~150k / — | $0.20 / 1M | ≈ $0.03 |
 
-At 10,000 turns/month: ~$23/mo on LLM calls, dominated by input tokens.  If retrieval quality requires stronger reasoning, switching the central_agent to Gemini 3 Flash Preview doubles the cost to ~$46/mo — still very cheap at this scale.
+At 10,000 turns/month: ~$23/mo on LLM calls, dominated by input tokens. If retrieval quality requires stronger reasoning, switching the central_agent to Gemini 3 Flash Preview doubles the cost to ~$46/mo — still very cheap at this scale.
